@@ -18,14 +18,14 @@
 
 | Category | Primary Tool / Platform | Model Version / Specification | Purpose in Project |
 | :---- | :---- | :---- | :---- |
-| **Code Scaffolding Agent** | Claude (Cowork mode, Claude desktop app) | `claude-opus-5-5` (identifier shown in the session) | Concept write-up, SVG mockups, single-file `index.html` with an SVG scene and a `requestAnimationFrame` game loop |
+| **Code Scaffolding Agent** | Claude (Cowork mode, Claude desktop app) | `claude-opus-5-5` (identifier shown in the session) | Concept write-up, SVG mockups, an SVG scene and a `requestAnimationFrame` game loop, first as one HTML file, later split into `index.html`, `css/`, `js/` for GitHub |
 | **Logic & Debugging Agent** | Claude (same session) | `claude-opus-5-5` | Typing/lock-on logic, enemy behaviours, night/day loop, scoring, leaderboard, Zhuyin key mapping, bug fixes, automated play-testing with a Playwright typing bot |
 | **Audio / SFX Generator** | ElevenLabs | ElevenLabs Sound Effects | Day hit "pop", night "slap", baby crying on game over |
-| **Music / Atmosphere** | ElevenLabs | ElevenLabs Sound Effects | 10-second "cute and cozy" looping background track |
+| **Music / Atmosphere** | ElevenLabs | ElevenLabs Sound Effects | 10-second "cute and cozy" clip, arranged into a 40-second background loop |
 | **Visual Asset Pipeline** | Claude, drawing vector art directly as inline SVG code | `claude-opus-5-5` | Baby, crib, mosquitoes, flies, cockroach, mouse, day-noise icons, gauge, certificate. Flat style based on a reference image I supplied. |
 | **Fonts** | Google Fonts | Fredoka, Huninn | Rounded UI font; cute rounded font for Zhuyin |
-| **Online leaderboard** | Supabase (free plan, Postgres + REST API) | — | Shared leaderboard for the GitHub Pages version; players never sign in |
-| **Audio processing** | Claude (ffmpeg + Python in its sandbox) | — | Trimming silence, fades, volume, pitch, loop check, embedding audio in `index.html` |
+| **Leaderboard (GitHub Pages)** | Browser `localStorage`, no server | — | Scores saved on the player's device, ranked against made-up rival babysitters; optional Supabase online board |
+| **Audio processing** | Claude (ffmpeg + Python in its sandbox) | — | Trimming silence, fades, volume, pitch, loop check, embedding audio in the single-file build |
 
 ---
 
@@ -103,7 +103,56 @@ First build, after about ten rounds of mockups and art direction:
 * The music loops gaplessly through an `AudioBufferSourceNode` with `loop = true` (an `<audio loop>` tag leaves a gap). A low-pass filter and gain change with the scene: muffled and quiet at night, bright by day, ducked when paused or after losing.
 * Hits play the recorded pop (day) or slap (night). Losing plays the baby crying. Separate volume settings: `musicVolume`, `popVolume`, `slapVolume`, `cryVolume`.
 * Smaller cues (key click, lock-on ping, baby whimper, countdown bell, giggle, damage tone, win jingle) are synthesized with Web Audio oscillators.
-* The audio is embedded in `index.html` as base64 so the single file works offline. Copies are in `assets/audio/`.
+* The GitHub version loads the four recorded clips from `assets/audio/`. The single-file version used on claude.ai embeds the same files as base64, so one loader handles both.
+
+---
+
+### 2.4 Results Screen, Titles & Rivals (Player Feedback Without a Server)
+
+* **Date / Session:** `2026-10-07`  
+* **Agent Used:** Claude (Cowork)  
+* **Target Objective:** Keep the "compare and replay" feeling on GitHub Pages without a login or an online database, and make the results screen worth a screenshot.
+
+#### Exact Prompt Submitted:
+
+> Is there a way to keep the player experience without necessarily having a leaderboard?
+
+> OK, do it.
+
+> The title, like "You are a Lullaby Pro", should be highlighted. Otherwise a screenshot is meaningless.
+
+> I think it should be changed using the Babysitter Certificate layout, but made different from it.
+
+> Pull "The baby started crying" out and put it at the top of the report with a small crying-baby face next to it. Then flatten the layout to fit the proportions.
+
+> The stamp can be a rectangle, to make it different from the final certificate. Keep "New best" on the right.
+
+> Now tell me roughly which day each title corresponds to.
+
+#### Implementation Outcome:
+
+* **Local board with rivals:** scores are saved in the player's own browser (`localStorage`) and ranked together with seven made-up rival babysitters, so the board is never empty and there is always someone to beat. No server, no sign-in, nothing to fake.
+* **Titles:** every game earns a title from its score, set in `CONFIG.titles`. Based on the typing bot's runs (9 perfect keys/s, about 47,000 points for a win):
+
+  | Title | Score | Roughly reached on |
+  | :---- | :---- | :---- |
+  | Rookie Sitter | 0–999 | Day 1 |
+  | Sleepy Helper | 1,000–3,999 | Day 2 |
+  | Lullaby Pro | 4,000–9,999 | Day 3 |
+  | Night Guardian | 10,000–19,999 | Days 4–5 |
+  | Pro Babysitter | 20,000–34,999 | Days 5–6 |
+  | Super Nanny | 35,000+ | Day 7 (about a win) |
+
+  Slower typists stop fewer pests per round, so they may reach each title about a day later.
+* **Babysitting Report (loss screen):** the headline and a wobbling crying-baby face sit above a clipboard note in the same paper-card style as the certificate. The card holds the babysitter's name, the score, the next title in small text and the stats row. The title is a rectangular red rubber stamp, deliberately different from the certificate's round gold seal. A yellow "New best!" sticker marks a personal record. On a win, the title is printed on the certificate instead.
+* **Layout iterations (all from my screenshot reviews):** removed the in-game clock from the card (the stats already say how far you got), narrowed the card from 58% to 44% of the screen width, moved the stamp up and set it almost straight (1.5°), changed the sticker from green to yellow, and evened out the space above and below the card.
+* **Save:** saves only the name and that game's result to the board, not an image of the report or certificate.
+
+| Babysitting Report (after a loss) | Leaderboard (your games + made-up rivals) |
+|---|---|
+| ![Babysitting Report](screenshots/report.png) | ![Leaderboard](screenshots/leaderboard.png) |
+
+The leaderboard shows the top 10. Your latest saved game is highlighted in green, your other games are in plain text, and rivals are in italics, marked "Rival". The note under the list explains that scores stay on this device.
 
 ---
 
@@ -164,6 +213,8 @@ First build, after about ten rounds of mockups and art direction:
 
   Analysis: 10.0 s, loops cleanly (near-zero samples at both ends), roughly G major with a one-second rhythmic pattern. Converted to 24 kHz to save space.  
 
+* **Iterations & Refinements:** In play-testing the music felt like it "only plays the first few seconds, then loops", because the same 10-second clip repeated every 10 seconds and its first 4 seconds were much quieter than the rest. The agent turned it into a 40-second arrangement built only from my clip: the original, the clip shifted down 5 semitones (to D), the original with its one-second bars reordered, and the clip shifted down 3 semitones. It only shifts downward to keep the low marimba sound I asked for, and keeps every bar on the beat so the 40-second loop is seamless. It also gently raised the quiet opening. The loop now repeats every 40 seconds instead of every 10.  
+
 * **Exported Filename:** `/assets/audio/bg_music.wav`
 
 ---
@@ -223,13 +274,20 @@ First build, after about ten rounds of mockups and art direction:
   > When I play it online, the leaderboard can't save. I don't want a login, but I still want a leaderboard. Can you do that?
 
 * **Root Cause:** The shared leaderboard used Claude's built-in artifact storage, which only exists when the game is opened on claude.ai. A plain web page on GitHub Pages has no server to store scores.
-* **Resolution:** Added a second leaderboard mode that talks to a free Supabase database through its REST API with plain `fetch`. Only I (the developer) have a Supabase account; players never sign in. Each browser gets a random player id, and the database accepts anonymous reads and inserts only, with limits on name length and score range. The agent tested it against a mock server in two separate browsers. Setup steps are in `SUPABASE_SETUP.md`.
+* **First fix:** The agent added an online mode using a free Supabase database (no sign-in for players, only for me as the developer). It worked in a mock test, but it meant running a server, the risk of fake scores, and a project that pauses after a week of no use.
+* **Follow-up prompt:**
+
+  > Is there a way to keep the player experience without necessarily having a leaderboard?
+
+* **Resolution:** The GitHub Pages version now works with no server at all. Scores are saved in the player's browser, and the board mixes them with seven made-up rivals, so there is something to beat from the very first game. Every game also earns a title by score (Rookie Sitter, Sleepy Helper, Lullaby Pro, Night Guardian, Pro Babysitter, Super Nanny). When the baby wakes up or cries, the results show the headline with a small crying-baby face, then a "Babysitting Report": a clipboard note in the same paper-card style as the certificate, so the two screens feel related but clearly different. The title is a rectangular red rubber stamp ("You're a Lullaby Pro"), deliberately different from the round gold seal on the certificate, with the next title in small text, and a yellow "New best!" sticker marks a personal record. On a win the title is printed on the certificate. The Supabase option is still in the code, switched off, with steps in `SUPABASE_SETUP.md`.
+
+  ![Leaderboard with rivals](screenshots/leaderboard.png)
 
 ---
 
 ## 5\. Human-in-the-Loop Curation & Analytical Reflection
 
-> 200–300 words analyzing the collaborative dynamic between you and the AI tools
+*(200–300 words analyzing the collaborative dynamic between you and the AI tools)*
 
 > **Reflection Prompting Questions to Consider:**
 >
@@ -250,13 +308,13 @@ Through repeated testing, asking the AI to play-test the game and send me screen
 
 | Asset Filename | Asset Type | AI Model / Source Tool | License / Terms | Prompt / Origin Details |
 | :---- | :---- | :---- | :---- | :---- |
-| `index.html` | Game code (HTML/CSS/JS) | Claude (`claude-opus-5-5`) | Educational project | Written by the agent from the prompts in Section 2 |
+| `index.html`, `css/style.css`, `js/config.js`, `js/game.js` | Game code (HTML/CSS/JS) | Claude (`claude-opus-5-5`) | Educational project | Written by the agent from the prompts in Section 2 |
 | `reward_day_pop.wav` | SFX (Audio) | ElevenLabs Sound Effects | ElevenLabs Terms of Service (paid Creator plan) | Prompt in Sec 3.1; trimmed and lowered by the agent |
 | `reward_night_slap.wav` | SFX (Audio) | ElevenLabs Sound Effects | ElevenLabs Terms of Service (paid Creator plan) | Prompt in Sec 3.1; sped up 1.2× and softened by the agent |
 | `end_baby_cry.wav` | SFX (Audio) | ElevenLabs Sound Effects | ElevenLabs Terms of Service (paid Creator plan) | Prompt in Sec 3.3; fade-out added |
-| `bg_music.wav` | Music (Audio) | ElevenLabs Sound Effects | ElevenLabs Terms of Service (paid Creator plan) | Prompt in Sec 3.4 |
-| Damage / UI cues | SFX (synthesized) | Web Audio API, code by Claude | Part of `index.html` | Made by the agent under my direction (Sec 3.2) |
-| Characters, crib, icons, certificate | Vector art (inline SVG) | Claude, drawn as code | Part of `index.html` | Flat style from a reference image I supplied; characters are original |
+| `bg_music.wav` | Music (Audio) | ElevenLabs Sound Effects | ElevenLabs Terms of Service (paid Creator plan) | Prompt in Sec 3.4; arranged into a 40 s loop by the agent |
+| Damage / UI cues | SFX (synthesized) | Web Audio API, code by Claude | Part of `js/game.js` | Made by the agent under my direction (Sec 3.2) |
+| Characters, crib, icons, certificate, report card | Vector art (inline SVG + CSS) | Claude, drawn as code | Part of `index.html` and `css/style.css` | Flat style from a reference image I supplied; characters are original |
 | Fredoka, Huninn | Fonts | Google Fonts | SIL Open Font License 1.1 | Loaded from fonts.googleapis.com |
 | `screenshots/*` | Images | Captured by the agent with Playwright | Same as the project | Screens from the finished game |
 
@@ -264,8 +322,32 @@ Through repeated testing, asking the AI to play-test the game and send me screen
 
 ### Running the game
 
-Play at [yche1364-yj.github.io/game-babysitter](https://yche1364-yj.github.io/game-babysitter/), or open `index.html` in a browser. To publish: Settings → Pages → Branch `main`, folder `/ (root)`. A keyboard is needed. The leaderboard is shared online with no sign-in for players: the Claude-hosted version uses Claude's built-in storage, and the GitHub Pages version uses a free Supabase database (setup steps in [SUPABASE_SETUP.md](SUPABASE_SETUP.md)). Everything adjustable is in the `CONFIG` block at the top of the script.
+Play at [yche1364-yj.github.io/game-babysitter](https://yche1364-yj.github.io/game-babysitter/). A keyboard is needed and no sign-in is needed.
 
-| Night | Day | Certificate |
+```
+game-babysitter/
+├── index.html            page markup: SVG scene and screens
+├── css/style.css         all styles
+├── js/config.js          every tunable number: timing, enemies, words, scoring, rivals, titles
+├── js/game.js            game logic: loop, typing, enemies, audio, leaderboard, results
+├── assets/audio/         ElevenLabs music and sound effects (WAV)
+├── screenshots/          images used in this README
+├── README.md
+└── SUPABASE_SETUP.md     optional: turn on a shared online leaderboard
+```
+
+**Publish:** upload the contents of this folder to the repo root (GitHub → Add file → Upload files), then Settings → Pages → Deploy from a branch → `main`, `/ (root)`.
+
+**Play locally:** the recorded sounds are loaded from `assets/audio/`, which browsers block for pages opened straight from disk. Run `python3 -m http.server` in this folder and open `http://localhost:8000`. Opened by double-click, the game still runs, but only with the synthesized sounds.
+
+**Leaderboard:** the Claude-hosted version has a shared online leaderboard. The GitHub Pages version keeps scores on each player's device and ranks them against seven made-up rivals (Big Sis Lulu at 600 up to Auntie Sky at 45,000). A shared online board can be turned on later with a free Supabase project ([SUPABASE_SETUP.md](SUPABASE_SETUP.md)).
+
+| Night | Day | Babysitting Report |
 |---|---|---|
-| ![Night](screenshots/night.png) | ![Day](screenshots/day.png) | ![Certificate](screenshots/certificate.png) |
+| ![Night](screenshots/night.png) | ![Day](screenshots/day.png) | ![Report](screenshots/report.png) |
+
+| Certificate | Leaderboard | Zhuyin mode |
+|---|---|---|
+| ![Certificate](screenshots/certificate.png) | ![Leaderboard](screenshots/leaderboard.png) | ![Zhuyin](screenshots/zhuyin.png) |
+
+![Ending: the baby climbs out of the crib](screenshots/ending.gif)
