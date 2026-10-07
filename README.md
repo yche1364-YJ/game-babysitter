@@ -6,7 +6,8 @@
 **Project Title:** Babysitter  
 **Repository URL:** [https://github.com/yche1364-YJ/game-babysitter](https://github.com/yche1364-YJ/game-babysitter)  
 **Play Online (GitHub Pages):** [https://yche1364-yj.github.io/game-babysitter/](https://yche1364-yj.github.io/game-babysitter/)  
-**Itch.io URL (Optional Bonus):** [https://yjcgame.itch.io/babysitter](https://yjcgame.itch.io/babysitter)
+**Itch.io URL (Optional Bonus):** [https://yjcgame.itch.io/babysitter](https://yjcgame.itch.io/babysitter)  
+**Presentation (PDF):** [docs/Babysitter-presentation.pdf](docs/Babysitter-presentation.pdf)
 
 > **Babysitter** is a cozy typing game built on a Chinese pun: 打蚊子 (swatting mosquitoes) sounds almost the same as 打文字 (typing words). Mosquitoes fly at the crib at night and noises float in during the day. The player types each pest's sound to stop it. Survive seven nights and seven days to earn a Babysitter Certificate. A Zhuyin mode lets players type Zhuyin key positions instead of English.
 
@@ -377,7 +378,8 @@ game-babysitter/
 ├── assets/audio/         ElevenLabs music and sound effects (WAV)
 ├── screenshots/          images used in this README
 ├── README.md
-└── SUPABASE_SETUP.md     optional: turn on a shared online leaderboard
+├── SUPABASE_SETUP.md     optional: turn on a shared online leaderboard
+└── docs/                 presentation slides (PDF)
 ```
 
 **Publish:** upload the contents of this folder to the repo root (GitHub → Add file → Upload files), then Settings → Pages → Deploy from a branch → `main`, `/ (root)`.
