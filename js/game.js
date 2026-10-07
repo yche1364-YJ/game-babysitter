@@ -1,4 +1,20 @@
 /* Babysitter - game logic. All tunable numbers live in js/config.js. */
+/* ---------- phone mode ----------
+   On a phone (or with ?mobile in the address), the scene is cropped to portrait, the game draws its own
+   keyboard under it (so the phone's keyboard never covers the crib), and the pests are slower and fewer. */
+const MOBILE = /[?&]mobile/.test(location.search) ||
+  (matchMedia('(pointer: coarse)').matches && Math.min(innerWidth, innerHeight) < 760 && !/[?&]desktop/.test(location.search));
+if (MOBILE) {
+  for (const m of ['night', 'day']) {
+    const c = CONFIG[m];
+    c.speed *= 0.72; c.spawnEvery *= 1.35; c.spawnEveryEnd *= 1.35;
+    c.maxOnScreen = 3; c.maxOnScreenEnd = Math.round(c.maxOnScreenEnd * 0.7);
+  }
+  CONFIG.day.firstDayMax = 4;
+  CONFIG.minSpawnEvery = 0.75;
+  CONFIG.maxOnScreenCap = 7;
+}
+
 /* ---------- helpers ---------- */
 const $ = id => document.getElementById(id);
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -126,13 +142,31 @@ const G = {
 };
 
 /* ---------- gauge ---------- */
-const R = 46;
+// On phones the meter is a rainbow arching over the crib; on computers it's a ring above the baby.
+const R = MOBILE ? 132 : 46;
 function arcPoint(deg) { const a = deg * Math.PI / 180; return [R * Math.cos(a), R * Math.sin(a)]; }
 function arcPath(frac) {
   frac = Math.max(0.001, Math.min(1, frac));
-  const start = 120, sweep = 300 * frac;
+  const start = MOBILE ? 202 : 120, sweep = (MOBILE ? 136 : 300) * frac;
   const [x1, y1] = arcPoint(start), [x2, y2] = arcPoint(start + sweep);
   return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${R} ${R} 0 ${sweep > 180 ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+if (MOBILE) {
+  $('gauge').setAttribute('transform', 'translate(482 404)');
+  for (const g of ['gradNight', 'gradDay']) { $(g).setAttribute('x1', -R); $(g).setAttribute('x2', R); }
+  for (const id of ['gTrack', 'gFill']) $(id).setAttribute('stroke-width', 13);
+  // two soft inner bands make the arch read as a rainbow
+  const at = (r, deg) => [r * Math.cos(deg * Math.PI / 180), r * Math.sin(deg * Math.PI / 180)];
+  for (const [r, op] of [[R - 14, 0.28], [R - 24, 0.16]]) {
+    const [x1, y1] = at(r, 202), [x2, y2] = at(r, 338);
+    const band = el('path', { d: `M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`, fill: 'none', stroke: 'url(#gradDay)', 'stroke-width': 6, 'stroke-linecap': 'round', opacity: op });
+    $('gauge').insertBefore(band, $('gTrack'));
+  }
+  $('gNum').setAttribute('y', -84); $('gNum').setAttribute('font-size', 19);
+  $('gUnit').setAttribute('y', -66); $('gUnit').setAttribute('font-size', 10);
+  const [ex, ey] = at(R, 202);   // the arc's left end; labels sit just under each end, clear of the crib
+  $('gLeft').setAttribute('x', ex.toFixed(1)); $('gLeft').setAttribute('y', (ey + 24).toFixed(1)); $('gLeft').setAttribute('font-size', 13);
+  $('gRight').setAttribute('x', (-ex).toFixed(1)); $('gRight').setAttribute('y', (ey + 24).toFixed(1)); $('gRight').setAttribute('font-size', 13);
 }
 $('gTrack').setAttribute('d', arcPath(1));
 
@@ -184,7 +218,7 @@ function zySyms(word) {
 const keysOf = w => ZH.on ? zySyms(w).map(k => k.key).join('') : w;
 const sv = (sp, field) => (ZH.on && CONFIG.zhuyin.specials[sp?.id]?.[field]) || sp?.[field];
 function setZhuyin(on) {
-  ZH.on = on; store.set('babysitter-zhuyin', on);
+  ZH.on = on; store.set('babysitter-zhuyin', on); if (MOBILE) { buildPad(); updatePad(); }
   $('btnZhuyin').setAttribute('aria-pressed', String(on));
   $('zhLabel').textContent = `注音模式 Zhuyin Mode · ${on ? 'On' : 'Off'}`;
   $('zhNote').hidden = !on;
@@ -192,7 +226,7 @@ function setZhuyin(on) {
 }
 function titleHintText() {
   const best = store.get('babysitter-best2');
-  $('titleHint').textContent = best ? `Your best: ${best.score}` : 'Keyboard needed';
+  $('titleHint').textContent = best ? `Your best: ${best.score}` : (MOBILE ? '' : 'Keyboard needed');
 }
 
 /* ---------- entities ---------- */
@@ -444,6 +478,7 @@ function defeat(e) {
 
 /* ---------- flow ---------- */
 function show(id) {
+  document.body.classList.toggle('on-title', ['scrTitle', 'scrOver', 'scrBoard', 'scrPause'].includes(id));
   for (const s of ['scrTitle', 'scrCard', 'scrPause', 'scrOver', 'scrBoard']) $(s).hidden = s !== id;
   const playing = id === null;
   $('btnPause').hidden = !(playing || id === 'scrPause');
@@ -551,7 +586,8 @@ function gameOver(title, won = false) {
   if (won) {
     $('certScore').textContent = G.score.toLocaleString('en-US');
     $('certDate').textContent = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    $('certBody').textContent = `kept the baby asleep for ${CONFIG.finalDay} nights and laughing for ${CONFIG.finalDay} days.`;
+    $('certBody').textContent = MOBILE ? `You handled the baby for ${CONFIG.finalDay} nights and days!!`
+      : `kept the baby asleep for ${CONFIG.finalDay} nights and laughing for ${CONFIG.finalDay} days.`;
   }
   $('stScore').textContent = G.score.toLocaleString('en-US');
   $('stNights').textContent = s.nights; $('stDays').textContent = s.days; $('stHits').textContent = s.hits;
@@ -628,6 +664,7 @@ function startEnding() {
   music.mood('ending');
   G.screen = 'ending'; G.endT = 0; G.endFx = {};
   show(null); $('btnPause').hidden = true;
+  document.body.classList.add('on-title');   // phone: hide the keyboard during the ending
   $('hud').setAttribute('display', 'none'); $('typebar').setAttribute('display', 'none'); $('dangerRing').setAttribute('display', 'none');
   setFace('laugh'); $('babyHand').setAttribute('display', 'none');
   buildBabyOut();
@@ -649,9 +686,10 @@ function stepEnding(dt) {
     const k = (t - 2.4); x = 200 + 70 * k; y = 60 - Math.abs(Math.sin(k * 9)) * 6; wave = Math.sin(k * 12) * 0.5;
   } else {                                        // jump for joy
     const k = t - 3.4; x = 270; y = 60 - Math.abs(Math.sin(k * 5.5)) * 55; armUp = 1; wave = Math.sin(k * 16);
-    if (!G.endFx.c1) { G.endFx.c1 = 1; confetti(752, 380); sound.win(); }
-    if (k > 0.6 && !G.endFx.c2) { G.endFx.c2 = 1; confetti(620, 300); confetti(880, 320); }
+    if (!G.endFx.c1) { G.endFx.c1 = 1; confetti(MOBILE ? 630 : 752, 380); sound.win(); }
+    if (k > 0.6 && !G.endFx.c2) { G.endFx.c2 = 1; confetti(MOBILE ? 520 : 620, 300); confetti(MOBILE ? 700 : 880, 320); }
   }
+  if (MOBILE) x *= 0.55;   // phone: stay inside the narrower portrait scene
   babyOut.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
   const a = 180 * armUp;
   babyOut.armL.setAttribute('transform', `rotate(${(a + wave * 15).toFixed(1)} 440 450)`);
@@ -799,7 +837,9 @@ function showSaveArea() {
     return;
   }
   const say = (rank, total) => {
-    line.textContent = G.saved
+    line.textContent = MOBILE
+      ? (G.saved ? `You're #${rank} of ${total}!` : `#${rank} of ${total} · save to join`)
+      : G.saved
       ? `You're the #${rank} babysitter out of ${total}.`
       : `This game ranks #${rank} out of ${total}. Save it to join the board.`;
   };
@@ -874,6 +914,7 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (G.screen === 'play') step(dt);
+  if (MOBILE && now - (pad.at || 0) > 120) { pad.at = now; updatePad(); }
   if (G.screen === 'title') titleIdle(now / 1000);
   if (G.screen === 'ending') stepEnding(dt);
   stepFx(dt);
@@ -1017,6 +1058,7 @@ function hideIdle() { idle.forEach(m => m.g.setAttribute('display', 'none')); }
 
 /* ---------- input ---------- */
 function focusKb() {
+  if (MOBILE) return;   // phone mode has its own keyboard
   // On touch devices, a focused hidden input brings up the on-screen keyboard.
   if (matchMedia('(pointer: coarse)').matches) $('kb').focus({ preventScroll: true });
 }
@@ -1055,7 +1097,67 @@ function imeWarn() {   // a Chinese input method swallows the keys
   if (G.screen !== 'play' || performance.now() - imeWarnAt < 2500) return;
   imeWarnAt = performance.now(); popup(480, 180, 'Switch to English input', '#e2453c');
 }
+/* ---------- the game's own keyboard (phone mode) ---------- */
+const PAD_EN = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+const PAD_ZH = ['1234567890-', 'qwertyuiop', 'asdfghjkl;', 'zxcvbnm,./'];
+const KEY_ZY = Object.fromEntries(Object.entries(ZY_KEY).map(([sym, k]) => [k, sym]));
+const pad = { keys: {}, built: null, lastHint: '' };
+function buildPad() {
+  const zh = ZH.on, mode = zh ? 'zh' : 'en';
+  if (pad.built === mode) return;
+  pad.built = mode; pad.keys = {}; pad.lastHint = '';
+  const box = $('pad'); box.replaceChildren(); box.classList.toggle('zh', zh);
+  const key = (k, label, cls = '') => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'pad-key ' + cls; b.textContent = label; b.dataset.k = k;
+    pad.keys[k] = b; return b;
+  };
+  for (const row of zh ? PAD_ZH : PAD_EN) {
+    const r = document.createElement('div'); r.className = 'pad-row';
+    for (const k of row) r.append(key(k, zh ? KEY_ZY[k] || k : k));
+    box.append(r);
+  }
+  const last = document.createElement('div'); last.className = 'pad-row';
+  if (zh) last.append(key(' ', 'space · 一聲', 'wide'));
+  last.append(key('back', '⌫ let go', 'wide'));
+  box.append(last);
+}
+function padPress(k, btn) {
+  unlockAudio();
+  btn.classList.add('down'); setTimeout(() => btn.classList.remove('down'), 90);
+  if (G.screen !== 'play') return;
+  if (k === 'back') releaseTarget(); else typeChar(k);
+  navigator.vibrate?.(8);
+  updatePad();
+}
+$('pad').addEventListener('pointerdown', e => {
+  const b = e.target.closest('.pad-key'); if (!b) return;
+  e.preventDefault(); padPress(b.dataset.k, b);
+});
+function updatePad() {   // the next key of the locked pest lights up; first keys of other pests glow softly
+  if (!MOBILE) return;
+  buildPad();
+  let hint = '', soft = new Set();
+  if (G.screen === 'play') {
+    if (G.target) hint = G.target.word[G.target.typed] || '';
+    else for (const e of G.ents) if (e.x > 205 && e.x < 755 && e.y > 0) soft.add(e.word[0]);
+  }
+  const sig = hint + '|' + [...soft].sort().join('');
+  if (sig === pad.lastHint) return;
+  pad.lastHint = sig;
+  for (const [k, b] of Object.entries(pad.keys)) { b.classList.toggle('hint', k === hint); b.classList.toggle('soft', !hint && soft.has(k)); }
+}
+
 ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { music.start(); clips.get('cryData'); clips.get('popData'); clips.get('slapData'); }, { once: true }));
+// Phones only allow sound after a real tap (iPhone counts touchend and click, not touchstart), so keep trying until it runs.
+try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch {}   // iPhone: play even when the ring switch is on silent
+function unlockAudio() {
+  if (!sound.on) return;
+  sound.init(); if (!sound.ctx) return;
+  if (sound.ctx.state !== 'running') sound.ctx.resume().catch(() => {});
+  music.start(); clips.get('popData'); clips.get('slapData'); clips.get('cryData');
+}
+['touchend', 'click', 'pointerup', 'keydown'].forEach(ev => document.addEventListener(ev, unlockAudio, { passive: true }));
 $('btnZhuyin').addEventListener('click', () => setZhuyin(!ZH.on));
 $('btnStart').addEventListener('click', () => { hideIdle(); newGame(); });
 $('btnAgain').addEventListener('click', newGame);
@@ -1078,6 +1180,11 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
 
 /* ---------- boot ---------- */
 (function boot() {
+  if (MOBILE) {
+    document.body.classList.add('mobile');
+    $('scene').setAttribute('viewBox', '205 0 550 600');   // portrait crop around the crib
+    buildPad();
+  }
   const s = store.get('babysitter-sound');
   if (s === false) { sound.on = false; $('btnMute').textContent = 'Sound off'; $('btnMute').setAttribute('aria-pressed', 'true'); }
   setZhuyin(false);   // every visit starts in English; players switch Zhuyin on from the homepage
@@ -1090,6 +1197,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startMusic); else startMusic();
   const hint = () => {
     const waiting = sound.on && sound.ctx && sound.ctx.state !== 'running';
+    if (MOBILE) { $('titleHint').textContent = waiting ? 'Tap for sound' : ''; return; }
     $('titleHint').textContent = waiting ? 'Keyboard needed · Click anywhere for music' : 'Keyboard needed';
   };
   hint(); document.addEventListener('DOMContentLoaded', () => { hint(); sound.ctx?.addEventListener('statechange', hint); });
