@@ -1,5 +1,7 @@
 # Master AI Prompt Log & Workflow Analysis
 
+**Mobile Version:** [github.com/yche1364-YJ/game-babysitter-mobile](https://github.com/yche1364-YJ/game-babysitter-mobile)
+
 **Course:** AME 294: Games and AI — Creating Games with Artificial Intelligence  
 **Assignment:** Portfolio Game 2 — Vibe-Coded Browser Game  
 **Student Name:** Ying-Ju Chen  
