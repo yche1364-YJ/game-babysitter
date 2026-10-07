@@ -6,11 +6,47 @@
 **Project Title:** Babysitter  
 **Repository URL:** [https://github.com/yche1364-YJ/game-babysitter](https://github.com/yche1364-YJ/game-babysitter)  
 **Play Online (GitHub Pages):** [https://yche1364-yj.github.io/game-babysitter/](https://yche1364-yj.github.io/game-babysitter/)  
-**Itch.io URL (Optional Bonus):** —
+**Itch.io URL (Optional Bonus):** [https://yjcgame.itch.io/babysitter](https://yjcgame.itch.io/babysitter)
 
 > **Babysitter** is a cozy typing game built on a Chinese pun: 打蚊子 (swatting mosquitoes) sounds almost the same as 打文字 (typing words). Mosquitoes fly at the crib at night and noises float in during the day. The player types each pest's sound to stop it. Survive seven nights and seven days to earn a Babysitter Certificate. A Zhuyin mode lets players type Zhuyin key positions instead of English.
 
 ![Title screen](screenshots/title.png)
+
+### Game Mechanics
+
+* **Core loop:** each round is one night (12:00–6:00 AM, 45 s) followed by one day (9:00 AM–noon, 40 s). Every pest carries a word. Type it to lock on, finish it to stop the pest.
+* **Night:** keep the baby asleep. The sleep meter reads Deep sleep → Asleep → Restless → Stirring → Waking!
+* **Day:** keep the baby laughing. The happy meter reads Giggling → Happy → Fussy → Teary → Crying! Each noise stopped gives back 3%.
+* **Damage:** a pest that reaches the baby costs 10%, a wrong key 2%, and pests inside the red danger ring drain the meter every second. At 0% the game is over.
+* **Progression:** every round, pests move about 12% faster and the gap between them is about 14% shorter, and the words get longer. Survive 7 nights and 7 days to win the Babysitter Certificate.
+* **Scoring:** 10 × round per word, 100 × round per level survived. The score earns a title from Rookie Sitter to Super Nanny.
+
+**New pests, round by round** (designed together with Claude: it drafted the roster as a table and I edited it):
+
+| Round | Night: new pest | What it does | Day: new noise | What it does |
+| :---- | :---- | :---- | :---- | :---- |
+| 1 | <img src="screenshots/sprites/mosquito.png" width="40" alt="Mosquito"> Mosquito | Type its buzz ("bzz", "zing") | <img src="screenshots/sprites/noise.png" width="40" alt="Noise"> Everyday noises | "honk", "woof", "bang" float in |
+| 2 | <img src="screenshots/sprites/tiger-mosquito.png" width="40" alt="Tiger mosquito"> Tiger mosquito | Big and slow; takes two buzzes. Talking mosquitoes also start ("snack", "getup") | <img src="screenshots/sprites/jackhammer.png" width="40" alt="Jackhammer"> Jackhammer | Three noises in a row before it stops |
+| 3 | <img src="screenshots/sprites/zippy-mosquito.png" width="40" alt="Zippy mosquito"> Zippy mosquito | Tiny and fast, with a wobble | <img src="screenshots/sprites/dog.png" width="40" alt="Dog"> Neighbor's dog | Stop the bark and two puppies run out |
+| 4 | <img src="screenshots/sprites/shadow-mosquito.png" width="40" alt="Shadow mosquito"> Shadow mosquito | Its buzz fades in and out, so you have to remember it | <img src="screenshots/sprites/doorbell.png" width="40" alt="Doorbell"> Doorbell | Rings right next to the crib |
+| 5 | <img src="screenshots/sprites/fly.png" width="40" alt="Fly"> Fly | Hovers, then darts; hard to time | <img src="screenshots/sprites/mail-carrier.png" width="40" alt="Mail carrier"> Mail carrier | Keeps ringing from far away; every ring costs 2% |
+| 6 | <img src="screenshots/sprites/cockroach.png" width="40" alt="Cockroach"> Cockroach | Two scurry in along the floor | <img src="screenshots/sprites/garbage-truck.png" width="40" alt="Garbage truck"> Garbage truck | Drives across playing its song; stop all three parts before it leaves |
+| 7 | <img src="screenshots/sprites/mouse.png" width="40" alt="Mouse"> Mouse | Stops to sniff; lock on and it panics and runs | <img src="screenshots/sprites/ice-cream-truck.png" width="40" alt="Ice cream truck"> Ice cream truck | Drives by and lets kids run out yelling |
+
+Each new pest is introduced on the round card with a picture and one line about it.
+
+**Zhuyin mode (for an extra challenge).** Zhuyin (Bopomofo) is the phonetic alphabet used only in Taiwan, so this mode is a challenge most players have never tried. Turn it on from the title screen and every pest shows Zhuyin symbols instead of English letters, with the matching keys printed underneath. There are two ways to type them:
+
+* With a real Zhuyin input method, typing the way Taiwanese players normally do.
+* In plain English keyboard mode, by pressing the keys shown under each word (for example `j / space`). Anyone can play it this way, even without knowing Zhuyin.
+
+Both work because the game reads which physical key was pressed, not the character the input method produces.
+
+![Zhuyin mode: pests show Zhuyin symbols with the matching keys underneath](screenshots/zhuyin-play.png)
+
+**Ending animation.** Surviving day 7 plays a short animation I asked for: the baby happily climbs out of the crib while confetti falls, then the Babysitter Certificate appears.
+
+![Ending animation: the baby climbs out of the crib](screenshots/ending.gif)
 
 ---
 
@@ -285,6 +321,14 @@ The leaderboard shows the top 10. Your latest saved game is highlighted in green
 
 ---
 
+### Incident 6: The Zhuyin input method swallowed key presses
+
+* **Symptom:** With a Zhuyin input method turned on, typing in Zhuyin mode did nothing, because the input method holds the keys while it composes a character.
+* **Root Cause:** The game compared the typed character, which the input method never sends while composing.
+* **Resolution:** The game now reads the physical key (`event.code`) and maps it to the standard Zhuyin keyboard layout, so it works with a Zhuyin input method on, or in plain English mode by following the key hints.
+
+---
+
 ## 5\. Human-in-the-Loop Curation & Analytical Reflection
 
 *(200–300 words analyzing the collaborative dynamic between you and the AI tools)*
@@ -350,4 +394,3 @@ game-babysitter/
 |---|---|---|
 | ![Certificate](screenshots/certificate.png) | ![Leaderboard](screenshots/leaderboard.png) | ![Zhuyin](screenshots/zhuyin.png) |
 
-![Ending: the baby climbs out of the crib](screenshots/ending.gif)

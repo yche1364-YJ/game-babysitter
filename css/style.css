@@ -128,7 +128,7 @@ svg text.zy tspan, #typed.zy { stroke: currentColor; }
 .report .r-body { display: flex; justify-content: space-between; align-items: center; gap: 1.5cqw; }
 .report .r-main { display: flex; flex-direction: column; gap: 0.2cqw; min-width: 0; }
 .report .r-title { font-size: 2.8cqw; font-weight: 700; line-height: 1.05; }
-.report .r-sitter { font-size: 1.4cqw; opacity: 0.8; }
+.report .r-sitter { font-size: 1.4cqw; opacity: 0.8; max-width: 21cqw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .report .r-sitter b { font-size: 2.4cqw; color: #c7362e; margin-left: 0.5cqw; opacity: 1; }
 .report .r-score { display: flex; align-items: baseline; gap: 1cqw; margin-top: -0.3cqw; }
 .report .r-score span { font-size: 1.2cqw; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 600; opacity: 0.6; }
