@@ -6,7 +6,7 @@
 **Project Title:** Babysitter  
 **Repository URL:** [https://github.com/yche1364-YJ/game-babysitter](https://github.com/yche1364-YJ/game-babysitter)  
 **Play Online (GitHub Pages):** [https://yche1364-yj.github.io/game-babysitter/](https://yche1364-yj.github.io/game-babysitter/)  
-**Itch.io URL (Optional Bonus):** —
+**Itch.io URL (Optional Bonus):** [https://yjcgame.itch.io/babysitter](https://yjcgame.itch.io/babysitter)
 
 > **Babysitter** is a cozy typing game built on a Chinese pun: 打蚊子 (swatting mosquitoes) sounds almost the same as 打文字 (typing words). Mosquitoes fly at the crib at night and noises float in during the day. The player types each pest's sound to stop it. Survive seven nights and seven days to earn a Babysitter Certificate. A Zhuyin mode lets players type Zhuyin key positions instead of English.
 
